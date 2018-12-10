@@ -7,6 +7,7 @@ import (
 
 	"github.com/nats-io/go-nats"
 	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/component"
+	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/types"
 )
 
 const (
@@ -14,7 +15,7 @@ const (
 )
 
 type Server struct {
-	*kit.Component
+	*component.Component
 }
 
 // SetupSubscriptions registers interest to the subjects that the
@@ -24,14 +25,14 @@ func (s *Server) SetupSubscriptions() error {
 
 	// Helps finding an available driver to accept a drive request.
 	nc.QueueSubscribe("drivers.find", "manager", func(msg *nats.Msg) {
-		var req *kit.DriverAgentRequest
+		var req *types.DriverAgentRequest
 		err := json.Unmarshal(msg.Data, &req)
 		if err != nil {
 			log.Printf("Error: %v\n", err)
 			return
 		}
 		log.Printf("requestID:%s - Driver Find Request\n", req.RequestID)
-		response := &kit.DriverAgentResponse{}
+		response := &types.DriverAgentResponse{}
 
 		// Find an available driver that can handle the user request.
 		m, err := nc.Request("drivers.rides", msg.Data, 2*time.Second)

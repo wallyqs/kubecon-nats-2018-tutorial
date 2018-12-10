@@ -8,8 +8,8 @@ import (
 	"runtime"
 
 	"github.com/nats-io/go-nats"
-	"github.com/wallyqs/nats-rider/api-server"
-	"github.com/wallyqs/nats-rider/kit/component"
+	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/api-server"
+	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/component"
 )
 
 func main() {
@@ -45,7 +45,7 @@ func main() {
 	log.Printf("Starting NATS Rider API Server version %s", apiserver.Version)
 
 	// Register new component within the system.
-	comp := kit.NewComponent("api-server")
+	comp := component.NewComponent("api-server")
 
 	// Connect to NATS and setup discovery subscriptions.
 	err := comp.SetupConnectionToNATS(natsServers)

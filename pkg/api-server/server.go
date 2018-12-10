@@ -11,6 +11,7 @@ import (
 
 	"github.com/nats-io/nuid"
 	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/component"
+	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/types"
 )
 
 const (
@@ -19,7 +20,7 @@ const (
 
 // Server is a component.
 type Server struct {
-	*kit.Component
+	*component.Component
 }
 
 // HandleRides processes requests to find available drivers in an area.
@@ -34,7 +35,7 @@ func (s *Server) HandleRides(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var request *kit.DriverAgentRequest
+	var request *types.DriverAgentRequest
 	err = json.Unmarshal(body, &request)
 	if err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
@@ -60,7 +61,7 @@ func (s *Server) HandleRides(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("requestID:%s - Response: %s\n", request.RequestID, string(msg.Data))
 
-	var resp *kit.DriverAgentResponse
+	var resp *types.DriverAgentResponse
 	err = json.Unmarshal(msg.Data, &resp)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

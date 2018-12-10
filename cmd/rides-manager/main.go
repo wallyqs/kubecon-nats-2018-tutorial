@@ -8,8 +8,8 @@ import (
 	"runtime"
 
 	"github.com/nats-io/go-nats"
-	"github.com/wallyqs/nats-rider/kit/component"
-	"github.com/wallyqs/nats-rider/rides-manager"
+	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/rides-manager"
+	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/component"
 )
 
 func main() {
@@ -40,7 +40,7 @@ func main() {
 	}
 	log.Printf("Starting NATS Rider Rides Manager version %s", ridesmanager.Version)
 
-	comp := kit.NewComponent("rides-manager")
+	comp := component.NewComponent("rides-manager")
 	err := comp.SetupConnectionToNATS(natsServers)
 	if err != nil {
 		log.Fatal(err)
