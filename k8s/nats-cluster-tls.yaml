@@ -1,0 +1,15 @@
+apiVersion: "nats.io/v1alpha2"
+kind: "NatsCluster"
+metadata:
+  name: "nyft-nats-cluster"
+spec:
+  size: 3
+  version: "edge-v2.0.0-beta.8.1"
+  serverImage: "synadia/nats-server"
+
+  tls:
+    # Certificates to secure the NATS client connections
+    serverSecret: "nats-clients-tls"
+
+    # Certificates to secure the routes.
+    routesSecret: "nats-routes-tls"

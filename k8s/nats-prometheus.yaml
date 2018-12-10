@@ -1,0 +1,182 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  labels:
+    app: prometheus
+  annotations:
+    prometheus.io/scrape: 'true'
+spec:
+  type: NodePort
+  ports:
+    - port: 9090
+      protocol: TCP
+      name: webui
+  selector:
+    app: prometheus
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: prometheus-core
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: prometheus-core
+  template:
+    metadata:
+      labels:
+        name: prometheus-core
+        app: prometheus
+    spec:
+      serviceAccountName: nats-ops
+      volumes:
+      - name: config-volume
+        configMap:
+          name: prometheus-core
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.2.1
+          ports:
+          - name: webui
+            containerPort: 9090
+          volumeMounts:
+          - name: config-volume
+            mountPath: /etc/prometheus
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-core
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 5s
+      scrape_timeout: 5s
+      evaluation_interval: 10s
+    scrape_configs:
+      - job_name: 'kubernetes-pods'
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+        - role: pod
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  labels:
+    app: grafana
+spec:
+  type: NodePort
+  ports:
+    - port: 3000
+  selector:
+    app: grafana
+    component: core
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: grafana-core
+  labels:
+    app: grafana
+    component: core
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: grafana-core
+  template:
+    metadata:
+      labels:
+        name: grafana-core
+        app: grafana
+        component: core
+    spec:
+      containers:
+      - image: grafana/grafana:5.1.0
+        name: grafana-core
+        imagePullPolicy: IfNotPresent
+        # env:
+        resources:
+          # keep request = limit to keep this container in guaranteed class
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        env:
+          # The following env variables set up basic auth twith the default admin user and admin password.
+          - name: GF_AUTH_BASIC_ENABLED
+            value: "false"
+            # value: "true"
+          - name: GF_AUTH_ANONYMOUS_ENABLED
+            value: "true"
+        volumeMounts:
+        - name: grafana-persistent-storage
+          mountPath: /var/lib/grafana/
+      volumes:
+      - name: grafana-persistent-storage
+        emptyDir: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nats-ops
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: nats-ops-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: nats-ops
+subjects:
+- kind: ServiceAccount
+  name: nats-ops
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: nats-ops
+rules:
+
+# Allow creating CRDs
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs: ["*"]
+
+# Allow all actions on NatsClusters
+- apiGroups:
+  - nats.io
+  resources:
+  - natsclusters
+  - natsserviceroles
+  verbs: ["*"]
+
+# Allow all actions on NatsStreamingClusters
+- apiGroups:
+  - streaming.nats.io
+  resources:
+  - natsstreamingclusters
+  verbs: ["*"]
+
+# Allow actions on basic Kubernetes objects
+- apiGroups: [""]
+  resources:
+  - configmaps
+  - secrets
+  - pods
+  - services
+  - serviceaccounts
+  - serviceaccounts/token
+  - endpoints
+  - events
+  verbs: ["*"]

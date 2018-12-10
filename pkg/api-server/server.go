@@ -11,6 +11,7 @@ import (
 
 	"github.com/nats-io/nuid"
 	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/component"
+	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/types"
 )
 
 const (
@@ -19,7 +20,7 @@ const (
 
 // Server is a component.
 type Server struct {
-	*kit.Component
+	*component.Component
 }
 
 // HandleRides processes requests to find available drivers in an area.
@@ -34,45 +35,49 @@ func (s *Server) HandleRides(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var request *kit.DriverAgentRequest
+	var request *types.DriverAgentRequest
 	err = json.Unmarshal(body, &request)
 	if err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	// Tag the request with an ID for tracing in the logs.
+	// TUTORIAL) Tag the request with an ID for tracing in the logs across components.
+	//
 	request.RequestID = nuid.Next()
-	req, err := json.Marshal(request)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-	nc := s.NATS()
+	// req, err := json.Marshal(request)
+	// if err != nil {
+	// 	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	// 	return
+	// }
+	// nc := s.NATS()
 
 	// Find a driver available to help with the request.
 	log.Printf("requestID:%s - Finding available driver for request: %s\n", request.RequestID, string(body))
-	msg, err := nc.Request("drivers.find", req, 5*time.Second)
-	if err != nil {
-		log.Printf("requestID:%s - Gave up finding available driver for request\n", request.RequestID)
-		http.Error(w, "Request timeout", http.StatusRequestTimeout)
-		return
-	}
-	log.Printf("requestID:%s - Response: %s\n", request.RequestID, string(msg.Data))
 
-	var resp *kit.DriverAgentResponse
-	err = json.Unmarshal(msg.Data, &resp)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-	if resp.Error != "" {
-		http.Error(w, resp.Error, http.StatusServiceUnavailable)
-		return
-	}
+	// TUTORIAL) Send request to 'drivers.find' and wait 5 secs
+	// 
+	// msg, err := nc.Request("drivers.find", req, 5*time.Second)
+	// if err != nil {
+	// 	log.Printf("requestID:%s - Gave up finding available driver for request\n", request.RequestID)
+	// 	http.Error(w, "Request timeout", http.StatusRequestTimeout)
+	// 	return
+	// }
+	// log.Printf("requestID:%s - Response: %s\n", request.RequestID, string(msg.Data))
 
-	log.Printf("requestID:%s - Driver with ID %s is available to handle the request", request.RequestID, resp.ID)
-	fmt.Fprintf(w, string(msg.Data))
+	// var resp *types.DriverAgentResponse
+	// err = json.Unmarshal(msg.Data, &resp)
+	// if err != nil {
+	// 	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	// 	return
+	// }
+	// if resp.Error != "" {
+	// 	http.Error(w, resp.Error, http.StatusServiceUnavailable)
+	// 	return
+	// }
+
+	// log.Printf("requestID:%s - Driver with ID %s is available to handle the request", request.RequestID, resp.ID)
+	// fmt.Fprintf(w, string(msg.Data))
 }
 
 // ListenAndServe takes the network address and port that
@@ -90,8 +95,13 @@ func (s *Server) ListenAndServe(addr string) error {
 		fmt.Fprintf(w, fmt.Sprintf("NATS Rider API Server v%s\n", Version))
 	})
 
+	// GET /healthz
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, fmt.Sprintf("OK\n", Version))
+	})
+
 	// POST /rides
-	mux.HandleFunc("/rides", s.HandleRides)
+	mux.HandleFunc("/v1/rides", s.HandleRides)
 
 	l, err := net.Listen("tcp", addr)
 	if err != nil {

@@ -8,8 +8,8 @@ import (
 	"runtime"
 
 	"github.com/nats-io/go-nats"
-	"github.com/wallyqs/nats-rider/kit/component"
-	"github.com/wallyqs/nats-rider/rides-manager"
+	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/component"
+	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/nyft-service"
 )
 
 func main() {
@@ -17,7 +17,7 @@ func main() {
 	var showVersion bool
 	var natsServers string
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: rides-manager [options...]\n\n")
+		fmt.Fprintf(os.Stderr, "Usage: nyft-service [options...]\n\n")
 		flag.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\n")
 	}
@@ -35,18 +35,22 @@ func main() {
 		flag.Usage()
 		os.Exit(0)
 	case showVersion:
-		fmt.Fprintf(os.Stderr, "NATS Rider Rides Manager Server v%s\n", ridesmanager.Version)
+		fmt.Fprintf(os.Stderr, "NYFT Service v%s\n", service.Version)
 		os.Exit(0)
 	}
-	log.Printf("Starting NATS Rider Rides Manager version %s", ridesmanager.Version)
 
-	comp := kit.NewComponent("rides-manager")
+	// Register component
+	comp := component.NewComponent("nyft-service")
+	comp.SetupLogging()
+	go comp.SetupSignalHandlers()
+	log.Printf("Starting NYFT Service v%s", service.Version)
+
 	err := comp.SetupConnectionToNATS(natsServers)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	s := ridesmanager.Server{
+	s := service.Server{
 		Component: comp,
 	}
 	err = s.SetupSubscriptions()

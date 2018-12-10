@@ -1,12 +1,15 @@
 package component
 
 import (
-	"encoding/json"
 	"expvar"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
 	"runtime"
 	"sync"
+	"syscall"
+	"time"
 
 	"github.com/nats-io/go-nats"
 	"github.com/nats-io/nuid"
@@ -37,77 +40,98 @@ func NewComponent(kind string) *Component {
 	}
 }
 
+type logger struct {
+	pid int
+	id  string
+}
+
+func (l logger) Write(b []byte) (int, error) {
+	return fmt.Printf("[%d] %s - %s - %s", l.pid, time.Now().Format(time.StampMilli), l.id, string(b))
+}
+
+func (c *Component) SetupLogging() {
+	log.SetFlags(0)
+	l := &logger{
+		pid: os.Getpid(),
+		id:  c.ID(),
+	}
+	log.SetOutput(l)
+}
+
 // SetupConnectionToNATS connects to NATS and registers the event
 // callbacks and makes it available for discovery requests as well.
 func (c *Component) SetupConnectionToNATS(servers string, options ...nats.Option) error {
-	// Label the connection with the kind and id from component.
+	// TUTORIAL: Label the connection with the kind and id from component.
 	options = append(options, nats.Name(c.Name()))
 
 	c.cmu.Lock()
 	defer c.cmu.Unlock()
 
-	// Connect to NATS with customized options.
-	nc, err := nats.Connect(servers, options...)
-	if err != nil {
-		return err
-	}
-	c.nc = nc
-
-	// Setup NATS event callbacks
+	// TUTORIAL 1) Connect to NATS with customized options.
 	//
-	// Handle protocol errors and slow consumer cases.
-	nc.SetErrorHandler(func(_ *nats.Conn, _ *nats.Subscription, err error) {
-		log.Printf("NATS error: %s\n", err)
-	})
-	nc.SetReconnectHandler(func(_ *nats.Conn) {
-		log.Println("Reconnected to NATS!")
-	})
-	nc.SetDisconnectHandler(func(_ *nats.Conn) {
-		log.Println("Disconnected from NATS!")
-	})
-	nc.SetClosedHandler(func(_ *nats.Conn) {
-		panic("Connection to NATS is closed!")
-	})
+	// - Connect
+	//
+	// Connect to NATS with customized options.
 
-	// Register component so that it is available for discovery requests.
-	_, err = c.nc.Subscribe("_NATS_RIDER.discovery", func(m *nats.Msg) {
-		// Reply back directly with own name if requested.
-		if m.Reply != "" {
-			nc.Publish(m.Reply, []byte(c.ID()))
-		} else {
-			log.Println("[Discovery] No Reply inbox, skipping...")
+	// TUTORIAL 2) Setup NATS event callbacks
+	//
+	// - Error
+	// - Reconnect
+	// - Disconnected
+	// - Closed
+	// - Discovered
+	//
+
+	// TUTORIAL 5) Register component so that it is available for discovery requests.
+	//
+	// - Subscribe to _NYFT.discovery
+	//
+
+	// TUTORIAL 6) Register component so that it is available for direct status requests.
+	//
+	// - Subscribe to _NYFT.<component_id>.statsz
+	//
+
+	return nil
+}
+
+func (c *Component) SetupSignalHandlers() {
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	for sig := range sigCh {
+		log.Printf("Trapped '%v' signal", sig)
+
+		switch sig {
+		case syscall.SIGINT:
+			// Flush NATS buffer then disconnect from NATS.
+			c.Exit()
+			return
+		case syscall.SIGTERM:
+			// Gracefully shutdown the component by
+			// draining NATS connection.
+			c.Shutdown()
+			return
 		}
-	})
+	}
+}
 
-	// Register component so that it is available for direct status requests.
-	// e.g. _NATS_RIDER.api-server.:id.status
-	statusSubject := fmt.Sprintf("_NATS_RIDER.%s.status", c.id)
-	_, err = c.nc.Subscribe(statusSubject, func(m *nats.Msg) {
-		if m.Reply != "" {
-			log.Println("[Status] Replying with status...")
-			statsz := struct {
-				Kind string           `json:"kind"`
-				ID   string           `json:"id"`
-				Cmd  []string         `json:"cmdline"`
-				Mem  runtime.MemStats `json:"memstats"`
-			}{
-				Kind: c.kind,
-				ID:   c.id,
-				Cmd:  expvar.Get("cmdline").(expvar.Func)().([]string),
-				Mem:  expvar.Get("memstats").(expvar.Func)().(runtime.MemStats),
-			}
-			result, err := json.Marshal(statsz)
-			if err != nil {
-				log.Printf("Error: %s\n", err)
-				return
-			}
-			nc.Publish(m.Reply, result)
-		} else {
-			log.Println("[Status] No Reply inbox, skipping...")
-		}
-	})
-
-	return err
+// Statsz are the latest stats from the component.
+func (c *Component) Statsz() interface{} {
+	// Add a couple of metrics from expvars.
+	mem := expvar.Get("memstats").(expvar.Func)().(runtime.MemStats)
+	cmdline := expvar.Get("cmdline").(expvar.Func)().([]string)
+	return struct {
+		Kind string   `json:"kind"`
+		ID   string   `json:"id"`
+		Cmd  []string `json:"cmdline"`
+		Mem  uint64   `json:"mem"`
+	}{
+		Kind: c.kind,
+		ID:   c.id,
+		Cmd:  cmdline,
+		Mem:  mem.HeapAlloc,
+	}
 }
 
 // NATS returns the current NATS connection.
@@ -131,10 +155,21 @@ func (c *Component) Name() string {
 	return fmt.Sprintf("%s:%s", c.kind, c.id)
 }
 
-// Shutdown makes the component go away.
+// Shutdown makes the component go away gracefully.
 func (c *Component) Shutdown() error {
-	c.NATS().Close()
+	log.Println("Shutting down...")
+
+	// TUTORIAL) Shutdown the server gracefully with Drain.
+
 	return nil
 }
 
-// TODO: GracefulShutdown
+// Exit flushes the NATS buffer and disconnects.
+func (c *Component) Exit() error {
+	log.Println("Exiting...")
+	defer os.Exit(1)
+
+	// TUTORIAL) Close the NATS connection.
+
+	return nil
+}

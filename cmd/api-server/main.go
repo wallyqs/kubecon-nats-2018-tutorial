@@ -8,8 +8,8 @@ import (
 	"runtime"
 
 	"github.com/nats-io/go-nats"
-	"github.com/wallyqs/nats-rider/api-server"
-	"github.com/wallyqs/nats-rider/kit/component"
+	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/api-server"
+	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/component"
 )
 
 func main() {
@@ -39,13 +39,14 @@ func main() {
 		flag.Usage()
 		os.Exit(0)
 	case showVersion:
-		fmt.Fprintf(os.Stderr, "NATS Rider API Server v%s\n", apiserver.Version)
+		fmt.Fprintf(os.Stderr, "NYFT API Server v%s\n", apiserver.Version)
 		os.Exit(0)
 	}
-	log.Printf("Starting NATS Rider API Server version %s", apiserver.Version)
-
 	// Register new component within the system.
-	comp := kit.NewComponent("api-server")
+	comp := component.NewComponent("api-server")
+	comp.SetupLogging()
+	go comp.SetupSignalHandlers()
+	log.Printf("Starting NYFT API Server version %s", apiserver.Version)
 
 	// Connect to NATS and setup discovery subscriptions.
 	err := comp.SetupConnectionToNATS(natsServers)
