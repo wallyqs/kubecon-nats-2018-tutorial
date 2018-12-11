@@ -1,4 +1,4 @@
-package driveragent
+package agent
 
 import (
 	"encoding/json"

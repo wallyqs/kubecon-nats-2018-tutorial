@@ -31,7 +31,7 @@ func main() {
 	}
 
 	startTime := time.Now()
-	nc.PublishRequest("_NATS_RIDER.discovery", inbox, []byte(""))
+	nc.PublishRequest("_NYFT.discovery", inbox, []byte(""))
 	for {
 		msg, err := sub.NextMsgWithContext(ctx)
 		if err != nil {
@@ -47,7 +47,7 @@ func main() {
 
 	// Checking status of available components
 	for _, componentID := range replies {
-		statusSubject := fmt.Sprintf("_NATS_RIDER.%s.statz", componentID)
+		statusSubject := fmt.Sprintf("_NYFT.%s.statz", componentID)
 		resp, err := nc.Request(statusSubject, []byte(""), 500*time.Millisecond)
 		if err != nil {
 			continue

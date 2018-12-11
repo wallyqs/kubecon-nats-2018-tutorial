@@ -1,4 +1,4 @@
-package ridesmanager
+package service
 
 import (
 	"encoding/json"

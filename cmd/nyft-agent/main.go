@@ -10,6 +10,7 @@ import (
 	"github.com/nats-io/go-nats"
 	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/component"
 	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/nyft-agent"
+	driveragent "github.com/wallyqs/nats-rider/driver-agent"
 )
 
 func main() {
@@ -20,7 +21,7 @@ func main() {
 		agentType   string
 	)
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: driver-agent [options...]\n\n")
+		fmt.Fprintf(os.Stderr, "Usage: nyft-agent [options...]\n\n")
 		flag.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\n")
 	}
@@ -44,14 +45,17 @@ func main() {
 
 	comp := component.NewComponent("driver-agent")
 
+	// 3) Reconnection logic
+	//
 	// Set infinite retries to never stop reconnecting to an
 	// available NATS server in case of an unreliable connection.
-	err := comp.SetupConnectionToNATS(natsServers, nats.MaxReconnects(-1))
-	if err != nil {
-		log.Fatal(err)
-	}
+	// 
+	// Also set reconnection attempts to every 2 seconds.
+	//
+	options := []nats.Option{}
+	err := comp.SetupConnectionToNATS(natsServers, options...)
 
-	ag := driveragent.Agent{
+	ag := agent.Agent{
 		Component: comp,
 		AgentType: agentType,
 	}

@@ -35,18 +35,20 @@ func main() {
 		flag.Usage()
 		os.Exit(0)
 	case showVersion:
-		fmt.Fprintf(os.Stderr, "NYFT Rides Manager Server v%s\n", ridesmanager.Version)
+		fmt.Fprintf(os.Stderr, "NYFT Service v%s\n", service.Version)
 		os.Exit(0)
 	}
-	log.Printf("Starting NYFT Rides Manager version %s", ridesmanager.Version)
+	log.Printf("Starting NYFT Service v%s", service.Version)
 
-	comp := component.NewComponent("rides-manager")
+	// Register component
+	comp := component.NewComponent("nyft-service")
+
 	err := comp.SetupConnectionToNATS(natsServers)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	s := ridesmanager.Server{
+	s := service.Server{
 		Component: comp,
 	}
 	err = s.SetupSubscriptions()
