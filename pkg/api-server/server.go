@@ -91,8 +91,13 @@ func (s *Server) ListenAndServe(addr string) error {
 		fmt.Fprintf(w, fmt.Sprintf("NATS Rider API Server v%s\n", Version))
 	})
 
+	// GET /healthz
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, fmt.Sprintf("OK\n", Version))
+	})
+
 	// POST /rides
-	mux.HandleFunc("/rides", s.HandleRides)
+	mux.HandleFunc("/v1/rides", s.HandleRides)
 
 	l, err := net.Listen("tcp", addr)
 	if err != nil {

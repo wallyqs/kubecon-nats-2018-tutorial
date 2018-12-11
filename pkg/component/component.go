@@ -81,22 +81,12 @@ func (c *Component) SetupConnectionToNATS(servers string, options ...nats.Option
 
 	// Register component so that it is available for direct status requests.
 	// e.g. _NATS_RIDER.api-server.:id.status
-	statusSubject := fmt.Sprintf("_NATS_RIDER.%s.status", c.id)
+	statusSubject := fmt.Sprintf("_NATS_RIDER.%s.statz", c.id)
 	_, err = c.nc.Subscribe(statusSubject, func(m *nats.Msg) {
 		if m.Reply != "" {
 			log.Println("[Status] Replying with status...")
-			statsz := struct {
-				Kind string           `json:"kind"`
-				ID   string           `json:"id"`
-				Cmd  []string         `json:"cmdline"`
-				Mem  runtime.MemStats `json:"memstats"`
-			}{
-				Kind: c.kind,
-				ID:   c.id,
-				Cmd:  expvar.Get("cmdline").(expvar.Func)().([]string),
-				Mem:  expvar.Get("memstats").(expvar.Func)().(runtime.MemStats),
-			}
-			result, err := json.Marshal(statsz)
+
+			result, err := json.Marshal(c.Statsz())
 			if err != nil {
 				log.Printf("Error: %s\n", err)
 				return
@@ -108,6 +98,23 @@ func (c *Component) SetupConnectionToNATS(servers string, options ...nats.Option
 	})
 
 	return err
+}
+
+func (c *Component) Statsz() interface{} {
+	// Add a couple of metrics from expvars.
+	mem := expvar.Get("memstats").(expvar.Func)().(runtime.MemStats)
+	cmdline := expvar.Get("cmdline").(expvar.Func)().([]string)
+	return struct {
+		Kind string   `json:"kind"`
+		ID   string   `json:"id"`
+		Cmd  []string `json:"cmdline"`
+		Mem  uint64   `json:"mem"`
+	}{
+		Kind: c.kind,
+		ID:   c.id,
+		Cmd:  cmdline,
+		Mem:  mem.HeapAlloc,
+	}
 }
 
 // NATS returns the current NATS connection.
