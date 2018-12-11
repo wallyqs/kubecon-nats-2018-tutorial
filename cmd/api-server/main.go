@@ -45,6 +45,7 @@ func main() {
 	// Register new component within the system.
 	comp := component.NewComponent("api-server")
 	comp.SetupLogging()
+	go comp.SetupSignalHandlers()
 	log.Printf("Starting NYFT API Server version %s", apiserver.Version)
 
 	// Connect to NATS and setup discovery subscriptions.

@@ -42,6 +42,7 @@ func main() {
 	// Register component
 	comp := component.NewComponent("nyft-service")
 	comp.SetupLogging()
+	go comp.SetupSignalHandlers()
 	log.Printf("Starting NYFT Service v%s", service.Version)
 
 	err := comp.SetupConnectionToNATS(natsServers)

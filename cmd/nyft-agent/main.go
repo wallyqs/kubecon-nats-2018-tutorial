@@ -44,6 +44,7 @@ func main() {
 	// Register component
 	comp := component.NewComponent("driver-agent")
 	comp.SetupLogging()
+	go comp.SetupSignalHandlers()
 	log.Printf("Starting NYFT Driver Agent version %s", agent.Version)
 
 	// 3) Reconnection logic

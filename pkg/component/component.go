@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"runtime"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/nats-io/go-nats"
@@ -95,7 +97,8 @@ func (c *Component) SetupConnectionToNATS(servers string, options ...nats.Option
 		log.Println("Disconnected from NATS!")
 	})
 	nc.SetClosedHandler(func(_ *nats.Conn) {
-		panic("Connection to NATS is closed!")
+		log.Println("NATS connection closed!")
+		c.Exit()
 	})
 
 	// 5) Register component so that it is available for discovery requests.
@@ -140,6 +143,27 @@ func (c *Component) SetupConnectionToNATS(servers string, options ...nats.Option
 	return nil
 }
 
+func (c *Component) SetupSignalHandlers() {
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	for sig := range sigCh {
+		log.Printf("Trapped '%v' signal", sig)
+
+		switch sig {
+		case syscall.SIGINT:
+			// Flush NATS buffer then disconnect from NATS.
+			c.Exit()
+			return
+		case syscall.SIGTERM:
+			// Gracefully shutdown the component by
+			// draining NATS connection.
+			c.Shutdown()
+			return
+		}
+	}
+}
+
 // Statsz are the latest stats from the component.
 func (c *Component) Statsz() interface{} {
 	// Add a couple of metrics from expvars.
@@ -179,8 +203,23 @@ func (c *Component) Name() string {
 	return fmt.Sprintf("%s:%s", c.kind, c.id)
 }
 
-// Shutdown makes the component go away.
+// Shutdown makes the component go away gracefully.
 func (c *Component) Shutdown() error {
+	log.Println("Shutting down...")
 	c.NATS().Drain()
+	return nil
+}
+
+// Shutdown makes the component go away gracefully.
+func (c *Component) Exit() error {
+	log.Println("Exiting...")
+	defer os.Exit(1)
+
+	nc := c.NATS()
+	if nc.IsClosed() {
+		return nil
+	}
+	nc.Close()
+
 	return nil
 }
