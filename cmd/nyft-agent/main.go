@@ -41,6 +41,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "NATS Rider Driver Agent v%s\n", driveragent.Version)
 		os.Exit(0)
 	}
+	log.SetPrefix(fmt.Sprintf("[%d] ", os.Getpid()))
 	log.Printf("Starting NYFT Driver Agent version %s", driveragent.Version)
 
 	comp := component.NewComponent("driver-agent")

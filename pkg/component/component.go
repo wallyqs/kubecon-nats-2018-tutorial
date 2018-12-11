@@ -82,7 +82,7 @@ func (c *Component) SetupConnectionToNATS(servers string, options ...nats.Option
 	//
 	// - Subscribe to _NYFT.discovery
 	//
-	_, err = c.nc.Subscribe("_NATS_RIDER.discovery", func(m *nats.Msg) {
+	_, err = c.nc.Subscribe("_NYFT.discovery", func(m *nats.Msg) {
 		// Reply back directly with own name if requested.
 		if m.Reply != "" {
 			nc.Publish(m.Reply, []byte(c.ID()))
@@ -98,7 +98,7 @@ func (c *Component) SetupConnectionToNATS(servers string, options ...nats.Option
 	//
 	// - Subscribe to _NYFT.<component_id>.statsz
 	//
-	statusSubject := fmt.Sprintf("_NATS_RIDER.%s.statz", c.id)
+	statusSubject := fmt.Sprintf("_NYFT.%s.statz", c.id)
 	_, err = c.nc.Subscribe(statusSubject, func(m *nats.Msg) {
 		if m.Reply != "" {
 			log.Println("[Status] Replying with status...")

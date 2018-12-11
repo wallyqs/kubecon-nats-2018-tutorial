@@ -42,6 +42,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "NYFT API Server v%s\n", apiserver.Version)
 		os.Exit(0)
 	}
+	log.SetPrefix(fmt.Sprintf("[%d] ", os.Getpid()))
 	log.Printf("Starting NYFT API Server version %s", apiserver.Version)
 
 	// Register new component within the system.

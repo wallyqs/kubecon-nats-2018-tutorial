@@ -8,8 +8,8 @@ import (
 	"runtime"
 
 	"github.com/nats-io/go-nats"
-	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/nyft-service"
 	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/component"
+	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/nyft-service"
 )
 
 func main() {
@@ -38,6 +38,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "NYFT Service v%s\n", service.Version)
 		os.Exit(0)
 	}
+	log.SetPrefix(fmt.Sprintf("[%d] ", os.Getpid()))
 	log.Printf("Starting NYFT Service v%s", service.Version)
 
 	// Register component
