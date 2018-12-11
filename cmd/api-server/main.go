@@ -42,11 +42,11 @@ func main() {
 		fmt.Fprintf(os.Stderr, "NYFT API Server v%s\n", apiserver.Version)
 		os.Exit(0)
 	}
-	log.SetPrefix(fmt.Sprintf("[%d] ", os.Getpid()))
-	log.Printf("Starting NYFT API Server version %s", apiserver.Version)
-
 	// Register new component within the system.
 	comp := component.NewComponent("api-server")
+
+	log.SetPrefix(fmt.Sprintf("[%d] - %s - ", os.Getpid(), comp.ID()))
+	log.Printf("Starting NYFT API Server version %s", apiserver.Version)
 
 	// Connect to NATS and setup discovery subscriptions.
 	err := comp.SetupConnectionToNATS(natsServers)

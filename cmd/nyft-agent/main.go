@@ -41,10 +41,11 @@ func main() {
 		fmt.Fprintf(os.Stderr, "NATS Rider Driver Agent v%s\n", driveragent.Version)
 		os.Exit(0)
 	}
-	log.SetPrefix(fmt.Sprintf("[%d] ", os.Getpid()))
-	log.Printf("Starting NYFT Driver Agent version %s", driveragent.Version)
 
+	// Register component
 	comp := component.NewComponent("driver-agent")
+	log.SetPrefix(fmt.Sprintf("[%d] - %s - ", os.Getpid(), comp.ID()))
+	log.Printf("Starting NYFT Driver Agent version %s", driveragent.Version)
 
 	// 3) Reconnection logic
 	//
