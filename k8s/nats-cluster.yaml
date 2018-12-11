@@ -1,0 +1,13 @@
+apiVersion: "nats.io/v1alpha2"
+kind: "NatsCluster"
+metadata:
+  name: "nyft-nats-cluster"
+spec:
+  size: 3
+  version: "edge-v2.0.0-beta.8.1"
+  serverImage: "synadia/nats-server"
+
+  pod:
+    enableMetrics: true
+    metricsImage: "synadia/prometheus-nats-exporter"
+    metricsImageTag: "0.1.0"
