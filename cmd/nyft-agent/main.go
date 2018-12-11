@@ -43,7 +43,7 @@ func main() {
 
 	// Register component
 	comp := component.NewComponent("driver-agent")
-	log.SetPrefix(fmt.Sprintf("[%d] - %s - ", os.Getpid(), comp.ID()))
+	comp.SetupLogging()
 	log.Printf("Starting NYFT Driver Agent version %s", agent.Version)
 
 	// 3) Reconnection logic

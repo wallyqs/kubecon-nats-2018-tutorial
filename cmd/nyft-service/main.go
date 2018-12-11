@@ -41,7 +41,7 @@ func main() {
 
 	// Register component
 	comp := component.NewComponent("nyft-service")
-	log.SetPrefix(fmt.Sprintf("[%d] - %s - ", os.Getpid(), comp.ID()))
+	comp.SetupLogging()
 	log.Printf("Starting NYFT Service v%s", service.Version)
 
 	err := comp.SetupConnectionToNATS(natsServers)

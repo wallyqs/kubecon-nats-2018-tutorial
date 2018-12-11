@@ -5,8 +5,10 @@ import (
 	"expvar"
 	"fmt"
 	"log"
+	"os"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/nats-io/go-nats"
 	"github.com/nats-io/nuid"
@@ -35,6 +37,24 @@ func NewComponent(kind string) *Component {
 		id:   id,
 		kind: kind,
 	}
+}
+
+type logger struct {
+	pid int
+	id  string
+}
+
+func (l logger) Write(b []byte) (int, error) {
+	return fmt.Printf("[%d] %s - %s - %s", l.pid, time.Now().Format(time.StampMilli), l.id, string(b))
+}
+
+func (c *Component) SetupLogging() {
+	log.SetFlags(0)
+	l := &logger{
+		pid: os.Getpid(),
+		id:  c.ID(),
+	}
+	log.SetOutput(l)
 }
 
 // SetupConnectionToNATS connects to NATS and registers the event
