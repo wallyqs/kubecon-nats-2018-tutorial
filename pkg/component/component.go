@@ -68,8 +68,8 @@ func (c *Component) SetupConnectionToNATS(servers string, options ...nats.Option
 	nc.SetErrorHandler(func(_ *nats.Conn, _ *nats.Subscription, err error) {
 		log.Printf("NATS error: %s\n", err)
 	})
-	nc.SetReconnectHandler(func(_ *nats.Conn) {
-		log.Println("Reconnected to NATS!")
+	nc.SetReconnectHandler(func(nc *nats.Conn) {
+		log.Printf("Reconnected to NATS at %s", nc.ConnectedUrl())
 	})
 	nc.SetDisconnectHandler(func(_ *nats.Conn) {
 		log.Println("Disconnected from NATS!")
