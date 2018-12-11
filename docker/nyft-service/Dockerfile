@@ -10,12 +10,12 @@ RUN go get -u github.com/nats-io/go-nats
 
 COPY . .
 
-RUN CGO_ENABLED=0 go build -o /rides-manager -v -a -tags netgo -installsuffix netgo cmd/rides-manager/main.go
+RUN CGO_ENABLED=0 go build -o /nyft-service -v -a -tags netgo -installsuffix netgo cmd/nyft-service/main.go
 
 FROM alpine:3.8
 
 RUN apk add --update ca-certificates
 
-COPY --from=builder /rides-manager /bin/rides-manager
+COPY --from=builder /nyft-service /bin/nyft-service
 
-ENTRYPOINT ["/bin/rides-manager"]
+ENTRYPOINT ["/bin/nyft-service"]
