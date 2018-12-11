@@ -1,8 +1,10 @@
 package component
 
 import (
+	"encoding/json"
 	"expvar"
 	"fmt"
+	"log"
 	"runtime"
 	"sync"
 
@@ -49,6 +51,11 @@ func (c *Component) SetupConnectionToNATS(servers string, options ...nats.Option
 	// - Connect
 	//
 	// Connect to NATS with customized options.
+	nc, err := nats.Connect(servers, options...)
+	if err != nil {
+		return err
+	}
+	c.nc = nc
 
 	// 2) Setup NATS event callbacks
 	//
@@ -58,16 +65,57 @@ func (c *Component) SetupConnectionToNATS(servers string, options ...nats.Option
 	// - Closed
 	// - Discovered
 	//
+	nc.SetErrorHandler(func(_ *nats.Conn, _ *nats.Subscription, err error) {
+		log.Printf("NATS error: %s\n", err)
+	})
+	nc.SetReconnectHandler(func(_ *nats.Conn) {
+		log.Println("Reconnected to NATS!")
+	})
+	nc.SetDisconnectHandler(func(_ *nats.Conn) {
+		log.Println("Disconnected from NATS!")
+	})
+	nc.SetClosedHandler(func(_ *nats.Conn) {
+		panic("Connection to NATS is closed!")
+	})
 
 	// 5) Register component so that it is available for discovery requests.
 	//
 	// - Subscribe to _NYFT.discovery
 	//
+	_, err = c.nc.Subscribe("_NATS_RIDER.discovery", func(m *nats.Msg) {
+		// Reply back directly with own name if requested.
+		if m.Reply != "" {
+			nc.Publish(m.Reply, []byte(c.ID()))
+		} else {
+			log.Println("[Discovery] No Reply inbox, skipping...")
+		}
+	})
+	if err != nil {
+		return err
+	}
 
 	// 6) Register component so that it is available for direct status requests.
 	//
 	// - Subscribe to _NYFT.<component_id>.statsz
 	//
+	statusSubject := fmt.Sprintf("_NATS_RIDER.%s.statz", c.id)
+	_, err = c.nc.Subscribe(statusSubject, func(m *nats.Msg) {
+		if m.Reply != "" {
+			log.Println("[Status] Replying with status...")
+
+			result, err := json.Marshal(c.Statsz())
+			if err != nil {
+				log.Printf("Error: %s\n", err)
+				return
+			}
+			nc.Publish(m.Reply, result)
+		} else {
+			log.Println("[Status] No Reply inbox, skipping...")
+		}
+	})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
