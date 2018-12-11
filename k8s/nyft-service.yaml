@@ -1,0 +1,22 @@
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: nyft-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: nyft-service
+  template:
+    metadata:
+      labels:
+        name: nyft-service
+    spec:
+      containers:
+        - name: nyft-service
+          image: wallyqs/nyft-service:0.1.0
+          command:
+          - /bin/nyft-service
+          - -s
+          - nats://nyft-nats-cluster-mgmt:4222

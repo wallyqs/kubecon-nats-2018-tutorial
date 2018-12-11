@@ -1,0 +1,23 @@
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: nyft-agents-regular
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      name: nyft-agents-regular
+  template:
+    metadata:
+      labels:
+        name: nyft-agents-regular
+    spec:
+      containers:
+        - name: nyft-service
+          image: wallyqs/nyft-agent:0.1.0
+          command:
+          - /bin/nyft-agent
+          - -s
+          - nats://nyft-nats-cluster-mgmt:4222
+          - type=regular
