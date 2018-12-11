@@ -35,6 +35,7 @@ type Agent struct {
 	lng float64
 }
 
+
 // Type returns the type of vehicle from the driver.
 func (s *Agent) Type() string {
 	s.mu.Lock()

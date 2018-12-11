@@ -9,7 +9,7 @@ import (
 
 	"github.com/nats-io/go-nats"
 	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/component"
-	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/driver-agent"
+	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/nyft-agent"
 )
 
 func main() {
@@ -28,7 +28,7 @@ func main() {
 	// Setup default flags
 	flag.BoolVar(&showHelp, "h", false, "Show help")
 	flag.BoolVar(&showVersion, "v", false, "Show version")
-	flag.StringVar(&natsServers, "nats", nats.DefaultURL, "List of NATS Servers to connect")
+	flag.StringVar(&natsServers, "s", nats.DefaultURL, "List of NATS Servers to connect")
 	flag.StringVar(&agentType, "type", "regular", "Kind of vehicle")
 	flag.Parse()
 
@@ -40,7 +40,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "NATS Rider Driver Agent v%s\n", driveragent.Version)
 		os.Exit(0)
 	}
-	log.Printf("Starting NATS Rider Driver Agent version %s", driveragent.Version)
+	log.Printf("Starting NYFT Driver Agent version %s", driveragent.Version)
 
 	comp := component.NewComponent("driver-agent")
 

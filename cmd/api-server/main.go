@@ -39,10 +39,10 @@ func main() {
 		flag.Usage()
 		os.Exit(0)
 	case showVersion:
-		fmt.Fprintf(os.Stderr, "NATS Rider API Server v%s\n", apiserver.Version)
+		fmt.Fprintf(os.Stderr, "NYFT API Server v%s\n", apiserver.Version)
 		os.Exit(0)
 	}
-	log.Printf("Starting NATS Rider API Server version %s", apiserver.Version)
+	log.Printf("Starting NYFT API Server version %s", apiserver.Version)
 
 	// Register new component within the system.
 	comp := component.NewComponent("api-server")

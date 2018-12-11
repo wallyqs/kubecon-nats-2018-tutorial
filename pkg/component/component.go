@@ -1,10 +1,8 @@
 package component
 
 import (
-	"encoding/json"
 	"expvar"
 	"fmt"
-	"log"
 	"runtime"
 	"sync"
 
@@ -46,60 +44,35 @@ func (c *Component) SetupConnectionToNATS(servers string, options ...nats.Option
 	c.cmu.Lock()
 	defer c.cmu.Unlock()
 
-	// Connect to NATS with customized options.
-	nc, err := nats.Connect(servers, options...)
-	if err != nil {
-		return err
-	}
-	c.nc = nc
-
-	// Setup NATS event callbacks
+	// 1) Connect to NATS with customized options.
 	//
-	// Handle protocol errors and slow consumer cases.
-	nc.SetErrorHandler(func(_ *nats.Conn, _ *nats.Subscription, err error) {
-		log.Printf("NATS error: %s\n", err)
-	})
-	nc.SetReconnectHandler(func(_ *nats.Conn) {
-		log.Println("Reconnected to NATS!")
-	})
-	nc.SetDisconnectHandler(func(_ *nats.Conn) {
-		log.Println("Disconnected from NATS!")
-	})
-	nc.SetClosedHandler(func(_ *nats.Conn) {
-		panic("Connection to NATS is closed!")
-	})
+	// - Connect
+	//
+	// Connect to NATS with customized options.
 
-	// Register component so that it is available for discovery requests.
-	_, err = c.nc.Subscribe("_NATS_RIDER.discovery", func(m *nats.Msg) {
-		// Reply back directly with own name if requested.
-		if m.Reply != "" {
-			nc.Publish(m.Reply, []byte(c.ID()))
-		} else {
-			log.Println("[Discovery] No Reply inbox, skipping...")
-		}
-	})
+	// 2) Setup NATS event callbacks
+	//
+	// - Error
+	// - Reconnect
+	// - Disconnected
+	// - Closed
+	// - Discovered
+	//
 
-	// Register component so that it is available for direct status requests.
-	// e.g. _NATS_RIDER.api-server.:id.status
-	statusSubject := fmt.Sprintf("_NATS_RIDER.%s.statz", c.id)
-	_, err = c.nc.Subscribe(statusSubject, func(m *nats.Msg) {
-		if m.Reply != "" {
-			log.Println("[Status] Replying with status...")
+	// 5) Register component so that it is available for discovery requests.
+	//
+	// - Subscribe to _NYFT.discovery
+	//
 
-			result, err := json.Marshal(c.Statsz())
-			if err != nil {
-				log.Printf("Error: %s\n", err)
-				return
-			}
-			nc.Publish(m.Reply, result)
-		} else {
-			log.Println("[Status] No Reply inbox, skipping...")
-		}
-	})
+	// 6) Register component so that it is available for direct status requests.
+	//
+	// - Subscribe to _NYFT.<component_id>.statsz
+	//
 
-	return err
+	return nil
 }
 
+// Statsz are the latest stats from the component.
 func (c *Component) Statsz() interface{} {
 	// Add a couple of metrics from expvars.
 	mem := expvar.Get("memstats").(expvar.Func)().(runtime.MemStats)
@@ -140,8 +113,6 @@ func (c *Component) Name() string {
 
 // Shutdown makes the component go away.
 func (c *Component) Shutdown() error {
-	c.NATS().Close()
+	c.NATS().Drain()
 	return nil
 }
-
-// TODO: GracefulShutdown

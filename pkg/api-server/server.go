@@ -42,6 +42,8 @@ func (s *Server) HandleRides(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 3) Trace
+
 	// Tag the request with an ID for tracing in the logs.
 	request.RequestID = nuid.Next()
 	req, err := json.Marshal(request)
