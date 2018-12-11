@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/nats-io/go-nats"
+	"github.com/nats-io/nuid"
 	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/component"
 	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/types"
 )
@@ -31,6 +32,12 @@ func (s *Server) SetupSubscriptions() error {
 			log.Printf("Error: %v\n", err)
 			return
 		}
+
+		// If no request ID, generate one of the request.
+		if req.RequestID == "" {
+			req.RequestID = nuid.Next()
+		}
+
 		log.Printf("requestID:%s - Driver Find Request\n", req.RequestID)
 		response := &types.DriverAgentResponse{}
 

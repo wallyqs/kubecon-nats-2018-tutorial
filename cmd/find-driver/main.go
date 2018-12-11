@@ -11,6 +11,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/nats-io/go-nats"
 	"github.com/wallyqs/kubecon-nats-2018-tutorial/pkg/types"
 )
 
@@ -58,6 +59,15 @@ func main() {
 
 	var response []byte
 	if natsServers != "" {
+		nc, err := nats.Connect(natsServers)
+		if err != nil {
+			log.Fatal(err)
+		}
+		msg, err := nc.Request("drivers.find", payload, 2*time.Second)
+		if err != nil {
+			log.Fatal(err)
+		}
+		response = msg.Data
 	} else {
 		// Use http by default
 		c := &http.Client{Timeout: 2 * time.Second}
